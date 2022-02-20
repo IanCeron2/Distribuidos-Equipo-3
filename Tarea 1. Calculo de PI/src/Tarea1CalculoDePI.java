@@ -13,11 +13,13 @@ import java.util.logging.Logger;
  * @author Iancr
  */
 public class Tarea1CalculoDePI {
+    static double pi = 0;
+    static Object obj = new Object();
     
-    static class Connection_toServer extends Thread{
+    static class Worker_Cliente extends Thread{
         int id_nodo_server;
 
-        public Connection_toServer(int id_nodo_server) {
+        Worker_Cliente(int id_nodo_server) {
             this.id_nodo_server = id_nodo_server;
         }
                 
@@ -31,23 +33,34 @@ public class Tarea1CalculoDePI {
                     break;
                 } catch (IOException e) {
                     try {
-                        Thread.sleep(100);
+                        Thread.sleep(1000);
                     } catch (InterruptedException ex) {
                         Logger.getLogger(Tarea1CalculoDePI.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
             }
             
-            //ya que se conecto con un servidor, debe de recibir el calculo que hizo el servidor
-            
+            try {
+                DataInputStream entrada = new DataInputStream(conexion.getInputStream());
+                DataOutputStream salida = new DataOutputStream(conexion.getOutputStream());
+                double pi_n = entrada.readDouble();
+                //System.out.println("El valor de pi_n: " + pi_n);
+                synchronized(obj){
+                    pi += pi_n;
+                }
+                conexion.close();
+                
+            } catch (IOException ex) {
+                Logger.getLogger(Tarea1CalculoDePI.class.getName()).log(Level.SEVERE, null, ex);
+            }           
         }          
     }
     
-    static class Worker extends Thread{
+    static class Worker_Servidor extends Thread{
         Socket conexion;
         int id_nodo_server;
 
-        Worker(Socket conexion, int id_nodo_server){
+        Worker_Servidor(Socket conexion, int id_nodo_server){
             this.conexion = conexion;            
             this.id_nodo_server = id_nodo_server;
         }
@@ -57,15 +70,17 @@ public class Tarea1CalculoDePI {
             try {
                 DataInputStream entrada = new DataInputStream(conexion.getInputStream());
                 DataOutputStream salida = new DataOutputStream(conexion.getOutputStream());
-                float sumatoria = 0;
+                double sumatoria = 0;
                 
-                for(int i = 0; i < 1000000; i++) sumatoria += (4/(8*i+2*(id_nodo_server - 2)+3));
+                for(double i = 0; i < 1000000; i++) sumatoria += (4/((8*i)+(2*(id_nodo_server - 2))+3));
+                
+                //System.out.println(sumatoria);
                 
                 if(id_nodo_server % 2 == 0){ // es un nodo par
                     sumatoria = sumatoria*(-1);
                 }
                 
-                salida.writeFloat(sumatoria);                
+                salida.writeDouble(sumatoria);                
                 conexion.close();
 
             } catch (IOException ex) {
@@ -74,7 +89,7 @@ public class Tarea1CalculoDePI {
         }       
     }
     
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         Scanner sc = new Scanner(System.in);
         int n;
         
@@ -82,17 +97,27 @@ public class Tarea1CalculoDePI {
         n = sc.nextInt();
         
         if(n == 0){ // es un nodo cliente
-            for(int i = 1; i < 5; i++) {
-                Connection_toServer c = new Connection_toServer(i);
-                c.start();
-            }
+            
+            Worker_Cliente c1 = new Worker_Cliente(1);
+            Worker_Cliente c2 = new Worker_Cliente(2);
+            Worker_Cliente c3 = new Worker_Cliente(3);
+            Worker_Cliente c4 = new Worker_Cliente(4);
+            c1.start();
+            c2.start();
+            c3.start();
+            c4.start();
+            c1.join();
+            c2.join();
+            c3.join();
+            c4.join();
+            System.out.println("El valor de pi es: " + pi);
         }
         else if (n == 1 || n == 2 || n == 3 || n == 4){ // es un nodo servidor
                       
             ServerSocket servidor = new ServerSocket(50000 + n);           
             for(;;){
                 Socket conexion = servidor.accept();
-                Worker cl = new Worker(conexion, n);
+                Worker_Servidor cl = new Worker_Servidor(conexion, n);
                 cl.start();
             }
         }

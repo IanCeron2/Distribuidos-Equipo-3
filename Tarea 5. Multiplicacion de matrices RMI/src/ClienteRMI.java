@@ -11,7 +11,7 @@ public class ClienteRMI {
     static int N = 8;
     static float[][]A = new float[N][N];
     static float[][]B = new float[N][N];
-    static double checksum = 0;
+    static float checksum = 0;
     
     static float[][] traspone_B(float[][]B, int N){
         //Traspone la matriz B, la matriz traspuesta queda en B

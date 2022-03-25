@@ -8,7 +8,7 @@ public class prueba {
     static float[][]A = new float[N][N];
     static float[][]B = new float[N][N];
     static float[][]C = new float[N][N];
-    static double checksum = 0;
+    static float checksum = 0;
     
     public static void main(String[] args) {
         long t1 = System.currentTimeMillis();
